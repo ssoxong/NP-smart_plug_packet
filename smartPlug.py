@@ -49,7 +49,7 @@ def main():
     global myPlug
 
     myPlug = plug()
-    myPlug.getPattern()  
+    myPlug.getPattern() 
     myPlug.printTime()
 
 def checkTime(buffer):
@@ -63,9 +63,9 @@ def checkTime(buffer):
     while True:
         elapsed_time = time.time() - start_time
         #시간 경과한 경우 알림
-        limit_time = 3
+        limit_time = 60     #60초
         if elapsed_time >= limit_time:
-            print("user over limit time!!")
+            print("!!!!!!!!!!!!!!!!!!user over limit time!!!!!!!!!!!!!!!!!!")
             
             # 시간을 초기화
             start_time = time.time()
@@ -73,12 +73,14 @@ def checkTime(buffer):
         # 파이프 값을 받았을때 실행
         while not buffer.empty(): 
             data = datetime.strptime(buffer.get(), '%Y-%m-%d %H:%M')
-            buffer = queue.LifoQueue() #버퍼 초기화
+            # buffer.clear() #버퍼 초기화
             print("check Time: ", data)
 
             # 받은 데이터에서 day, time 추출
             getDay = data.weekday()      #월 0 ~ 일 6   
-            getTime = data.time()
+            getTime = int(data.strftime("%H"))
+            # print(getDay)
+            # print(getTime)
     
             info = p100.getDeviceInfo() #Returns dict with all the device info of the connected plug
             # print(info)
@@ -89,7 +91,7 @@ def checkTime(buffer):
                     plugState = 1
                     start_time = time.time()    #시간 초기화
                     if(myPlug.matchPattern(getDay, getTime)):
-                        print("wrong using time!!")
+                        print("!!!!!!!!!!!!!!!!!!wrong using time!!!!!!!!!!!!!!!!!!!!")
                         #사용불가시간에 사용함, 클라이언트에게 알림
             else:
                 print("State: Turn Off")
@@ -105,8 +107,7 @@ def getPacket(buffer):
     global lastpacket
     lastpacket = datetime.now()
     print("패킷 캡쳐 시작: ", lastpacket)
-
-    sniff(iface='로컬 영역 연결* 2', prn=lambda pkt: packet_callback(pkt, buffer),
+    sniff(iface='Microsoft Wi-Fi Direct Virtual Adapter #4', prn=lambda pkt: packet_callback(pkt, buffer),
           filter=f'''ip host {os.getenv('IP_p100')} 
           and not ip host {os.getenv('IP_local')}''')
     

@@ -17,26 +17,26 @@ class plug():
             str2 = str_list[1]
             
             if(day=="월") :
-                self.monstime = str1
-                self.monetime = str2  
+                self.monstime = int(str1)
+                self.monetime = int(str2)  
             if(day =="화"):
-                self.tuestime = str1
-                self.tueetime = str2 
+                self.tuestime = int(str1)
+                self.tueetime = int(str2) 
             if(day =="수"):
-                self.wedstime = str1
-                self.wedetime = str2 
+                self.wedstime = int(str1)
+                self.wedetime = int(str2) 
             if(day =="목"):
-                self.thrstime = str1
-                self.thretime = str2 
+                self.thrstime = int(str1)
+                self.thretime = int(str2)
             if(day =="금"):
-                self.fristime = str1
-                self.frietime = str2  
+                self.fristime = int(str1)
+                self.frietime = int(str2)  
             if(day =="토"):
-                self.satstime = str1
-                self.satetime = str2 
+                self.satstime = int(str1)
+                self.satetime = int(str2) 
             if(day =="일"):
-                self.sunstime = str1
-                self.sunetime = str2                    
+                self.sunstime = int(str1)
+                self.sunetime = int(str2)                    
                 
     def printTime(self):
         print(f"월요일 start time: {self.monstime}, end time: {self.monetime}")

@@ -17,7 +17,7 @@ def getPacket(pipe):
     lastpacket = datetime.now()
     print("패킷 캡쳐 시작: ", lastpacket)
 
-    sniff(iface='로컬 영역 연결* 2', prn=lambda pkt: packet_callback(pkt, pipe),
+    sniff(iface='로컬 영역 연결* 4', prn=lambda pkt: packet_callback(pkt, pipe),
           filter=f'''ip host {os.getenv('IP_p100')} 
           and not ip host {os.getenv('IP_local')}''')
     
