@@ -38,7 +38,7 @@ class plug():
                 self.sunstime = int(str1)
                 self.sunetime = int(str2)                    
                 
-    def printTime(self):
+    def printPattern(self):
         print(f"월요일 start time: {self.monstime}, end time: {self.monetime}")
         print(f"화요일 start time: {self.tuestime}, end time: {self.tueetime}")
         print(f"수요일 start time: {self.wedstime}, end time: {self.wedetime}")
@@ -48,7 +48,7 @@ class plug():
         print(f"일요일 start time: {self.sunstime}, end time: {self.sunetime}")
 
     #텍스트 파일로 부터 패턴 받기
-    def getfromfile(self):
+    def getPattern_file(self):
 
         file = open("usagetime.txt", "r")
 
@@ -113,16 +113,3 @@ class plug():
                 return True
         
         else : return False
-
-
-
-
-
-# user1 = user()
-
-# #사용자 입력 변수로 받기
-# #user1.getfrominput()
-
-# #사용자 입력 파일에 저장
-# user1.getfromfile()
-# user1.printtime() 

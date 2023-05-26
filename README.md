@@ -18,3 +18,7 @@
 
 while not buffer.empty()
 -> 패킷 분석하면서 check 스레드도 돌고 있으니까 스레드에서 처리하는 도중에 패킷 쌓이면 가장 최신거 패턴매치 + 초기화
+
+
+python ver 3.9.13 conda
+iface 확인 - scapy에서 ifaces 영문 

@@ -124,7 +124,7 @@ class P100():
 			self.session.close()
 		self.session = Session()
 
-		r = self.session.post(URL, json=Payload, timeout=2)
+		r = self.session.post(URL,json=Payload, timeout=2)
 
 		encryptedKey = r.json()["result"]["key"]
 		self.tpLinkCipher = self.decode_handshake_key(encryptedKey)
