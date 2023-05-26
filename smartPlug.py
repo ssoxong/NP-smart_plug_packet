@@ -56,7 +56,7 @@ def checkTime(buffer, clnt):
             # print(getDay)
             # print(getTime)
     
-            info = p100.getDeviceInfo() #Returns dict with all the device info of the connected plug
+            info = p100.getDeviceInfo() #현재 연결되어있는 plug 정보 (json형태)
             # print(info)
             if info['result']['device_on']: #info (json형태) 
                 print("State: Turn On")
@@ -83,13 +83,11 @@ def checkTime(buffer, clnt):
                                     plugState=0
                                     break
                             
-                                               
             else:
                 print("State: Turn Off")
                 # 이전에 on 상태 였다면
                 if plugState == 1:
                     plugState = 0
-                    start_time = time.time()    #시간 초기화
 
 
 def getPacket(buffer,addr):
@@ -103,6 +101,7 @@ def getPacket(buffer,addr):
     sniff(iface='로컬 영역 연결* 2', prn=lambda pkt: packet_callback(pkt, buffer,addr),
           filter=f'''ip host {p100.getDeviceInfo()['result']['ip']} 
           and not ip host {os.getenv('IP_local')}''')
+    
     
 # 패킷 캡쳐 콜백 함수
 def packet_callback(packet, buffer,addr):
