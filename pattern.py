@@ -43,7 +43,7 @@ class plug():
         print(f"화요일 start time: {self.tuestime}, end time: {self.tueetime}")
         print(f"수요일 start time: {self.wedstime}, end time: {self.wedetime}")
         print(f"목요일 start time: {self.thrstime}, end time: {self.thretime}")
-        print(f"금요일 start time: {self.fristime}, end time: {self.fristime}")
+        print(f"금요일 start time: {self.fristime}, end time: {self.frietime}")
         print(f"토요일 start time: {self.satstime}, end time: {self.satetime}")
         print(f"일요일 start time: {self.sunstime}, end time: {self.sunetime}")
 
