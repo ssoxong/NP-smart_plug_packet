@@ -18,14 +18,12 @@ def handle_client(conn, addr):
     with conn:
         print("Connected with client:", addr)
         while True:
-            print("while///////////////////////////////")
             # 인자로 받은 값 파싱
             IP_P100 = conn.recv(1024).decode()
             email = conn.recv(1024).decode()
             password = conn.recv(1024).decode()
             myPlugdecoding = conn.recv(4096)
             myPlug = pickle.loads(myPlugdecoding)
-            print("end")
             
             #client에게 진행상황 알리는 send
             response = "Start SmartPlug init..."
