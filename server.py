@@ -18,12 +18,14 @@ def handle_client(conn, addr):
     with conn:
         print("Connected with client:", addr)
         while True:
+            print("while///////////////////////////////")
             # 인자로 받은 값 파싱
             IP_P100 = conn.recv(1024).decode()
             email = conn.recv(1024).decode()
             password = conn.recv(1024).decode()
             myPlugdecoding = conn.recv(4096)
             myPlug = pickle.loads(myPlugdecoding)
+            print("end")
             
             #client에게 진행상황 알리는 send
             response = "Start SmartPlug init..."
@@ -59,11 +61,9 @@ def start_server():
                 client_connections.append(conn)
                 client_thread = threading.Thread(target=handle_client, args=(conn, addr))
                 client_thread.start()
-            else:
-                #client의 요청시
-                client_socket = readable_socket
-                conn, addr = client_socket.accept()
-                handle_client(conn,addr)
+
+            #연결된 client의 요청은 smartPlug로 넘어감
+
 
 if __name__ == "__main__":
     start_server()

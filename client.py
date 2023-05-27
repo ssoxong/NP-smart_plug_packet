@@ -16,11 +16,14 @@ print("Server connect!!")
 
 # 서버에 데이터 전송
 print("Please enter yout data.")
+
 IP_P100 = input("IP P100: ")
-email = input("email: ")
-password = input("password: ")
 client_socket.send(IP_P100.encode())
+
+email = input("email: ")
 client_socket.send(email.encode())
+
+password = input("password: ")
 client_socket.send(password.encode())
 
 #plug class 생성
