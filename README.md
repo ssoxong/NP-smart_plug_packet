@@ -9,4 +9,4 @@
 - [x] client / server socket 통신 구현
 - [x] client 터미널에서 IP_P100, email, password 입력받고 패턴 입력
 - [x] select를 통한 다중통신 구현
-- [ ] 보고서 작성
+- [x] 보고서 작성
