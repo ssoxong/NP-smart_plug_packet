@@ -35,6 +35,10 @@ def handle_client(conn, addr):
 
             # 가장 마지막에 받은 패킷을 사용하기 위해 LIFO 이용
             buffer = queue.LifoQueue()
+
+            # 멀티스레드 사용
+            # p0은 패킷을 캡쳐하는 스레드
+            # p1은 발생한 패킷을 사용자 패턴과 매치하는 스레드
             p0 = threading.Thread(target=smartPlug.getPacket, args=(buffer, addr))
             p0.start()
             p1 = threading.Thread(target=smartPlug.checkTime, args=(buffer, conn))

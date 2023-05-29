@@ -1,6 +1,6 @@
 # NP-Project
 ---
-### Smart plug packet
+### Smart plug packetpyt
 - [x] scapy 로 패킷 끌어오기
 - [x] scapy 에서 발생하는 패킷 분석하기
 - [x] 패킷 발생시 plug 상태 출력
