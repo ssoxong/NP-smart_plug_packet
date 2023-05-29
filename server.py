@@ -39,12 +39,12 @@ def handle_client(conn, addr):
             # 멀티스레드 사용
             # p0은 패킷을 캡쳐하는 스레드
             # p1은 발생한 패킷을 사용자 패턴과 매치하는 스레드
-            p0 = threading.Thread(target=smartPlug.getPacket, args=(buffer, addr))
-            p0.start()
-            p1 = threading.Thread(target=smartPlug.checkTime, args=(buffer, conn))
-            p1.start()
-            p0.join()
-            p1.join()
+            th0 = threading.Thread(target=smartPlug.getPacket, args=(buffer, addr))
+            th0.start()
+            th1 = threading.Thread(target=smartPlug.checkTime, args=(buffer, conn))
+            th1.start()
+            th0.join()
+            th1.join()
             break
 
 def start_server():

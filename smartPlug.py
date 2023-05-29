@@ -41,20 +41,16 @@ def checkTime(buffer, clnt):
 
     print("Start checkTime")    
     while True:        
-        # 파이프 값을 받았을때 실행
+        # 버퍼 값을 받았을때 실행
         while not buffer.empty(): 
             data = datetime.strptime(buffer.get(), '%Y-%m-%d %H:%M')
-            # buffer.clear() #버퍼 초기화
             print("check Time: ", data)
 
             # 받은 데이터에서 day, time 추출
             getDay = data.weekday()      #월 0 ~ 일 6   
             getTime = int(data.strftime("%H"))
-            # print(getDay)
-            # print(getTime)
     
             info = p100.getDeviceInfo() #현재 연결되어있는 plug 정보 (json형태)
-            # print(info)
             if info['result']['device_on']: #info (json형태) 
                 print("State: Turn On")
                 # 이전에 off 상태 였다면
