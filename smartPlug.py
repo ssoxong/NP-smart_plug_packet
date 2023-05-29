@@ -13,7 +13,6 @@ import time
 
 def main(IP_P100, email, pwd, myPluglocal):
     global p100
-    # p100 = PyP100.P100(os.getenv('IP_P100'), os.getenv('email'), os.getenv('password')) #Creates a P100 plug object 환경 변수로 설정한 이메일, 비밀번호 가져오기
     p100 = PyP100.P100(IP_P100, email, pwd)
 
     p100.handshake()
@@ -40,9 +39,7 @@ def checkTime(buffer, clnt):
     global plugState
     global myPlug
 
-    print("Start checkTime")
-    start_time = time.time()
-    
+    print("Start checkTime")    
     while True:        
         # 파이프 값을 받았을때 실행
         while not buffer.empty(): 
@@ -108,7 +105,7 @@ def packet_callback(packet, buffer,addr):
     global lastpacket  # 전역 변수로 선언
     time_scope = timedelta(seconds=2)
 
-    # 패킷이 처음 발생하고 4초가 지나지 않으면 무시
+    # 패킷이 처음 발생하고 2초가 지나지 않으면 무시
     # 한 동작 당 한꺼번에 여러개의 패킷이 발생하기 때문에...
     if datetime.fromtimestamp(packet.time) < lastpacket+time_scope:
         return
