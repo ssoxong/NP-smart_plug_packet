@@ -37,8 +37,8 @@ def handle_client(conn, addr):
             buffer = queue.LifoQueue()
 
             # 멀티스레드 사용
-            # p0은 패킷을 캡쳐하는 스레드
-            # p1은 발생한 패킷을 사용자 패턴과 매치하는 스레드
+            # th0은 패킷을 캡쳐하는 스레드
+            # th1은 발생한 패킷을 사용자 패턴과 매치하는 스레드
             th0 = threading.Thread(target=smartPlug.getPacket, args=(buffer, addr))
             th0.start()
             th1 = threading.Thread(target=smartPlug.checkTime, args=(buffer, conn))
