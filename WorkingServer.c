@@ -7,145 +7,173 @@
 #include <arpa/inet.h>
 #include <openssl/sha.h>
 #include <signal.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/select.h>
+
 
 void err_proc();
+
 int main(int argc, char** argv)
 {
-	int clntSd;
-	struct sockaddr_in clntAddr;
-	int clntAddrLen, readLen, recvByte, maxBuff;
-	char rBuff[BUFSIZ];
-	if(argc != 3) {
-		printf("Usage: %s [IP Address] [Port]\n", argv[0]);
-	
-	}
+    int clntSd;
+    struct sockaddr_in clntAddr;
+    int clntAddrLen, readLen, recvByte, maxBuff;
+    char rBuff[BUFSIZ];
+    if(argc != 3) {
+        printf("Usage: %s [IP Address] [Port]\n", argv[0]);
+    }
 
-	//연결할 소켓 할당
-	clntSd = socket(AF_INET, SOCK_STREAM, 0);
-	if(clntSd == -1) err_proc();
-	printf("==== client program =====\n");
+    //연결할 소켓 할당
+    clntSd = socket(AF_INET, SOCK_STREAM, 0);
+    if(clntSd == -1) err_proc();
+    printf("==== client program =====\n");
 
-	memset(&clntAddr, 0, sizeof(clntAddr));
-	clntAddr.sin_family = AF_INET;
-	clntAddr.sin_addr.s_addr = inet_addr(argv[1]);
-	clntAddr.sin_port = htons(atoi(argv[2]));
+    memset(&clntAddr, 0, sizeof(clntAddr));
+    clntAddr.sin_family = AF_INET;
+    clntAddr.sin_addr.s_addr = inet_addr(argv[1]);
+    clntAddr.sin_port = htons(atoi(argv[2]));
 
-	//서버에 연결
-	if(connect(clntSd, (struct sockaddr *) &clntAddr,
-			    sizeof(clntAddr)) == -1)
-	{
-		close(clntSd);
-		err_proc();	
-	}
+    int flags = fcntl(clntSd, F_GETFL, 0);
+    fcntl(clntSd, F_SETFL, flags | O_NONBLOCK);
 
-	
-	read(clntSd, rBuff, BUFSIZ-1);
-	/*임의 data
-	unsigned char challenge[] = "201931212021304420211806";
-	int startcount = 1000000;
-	int maxcount = 2147483647; 
-	int difficulty = 8;*/
+    //서버에 연결
+    if (connect(clntSd, (struct sockaddr *) &clntAddr, sizeof(clntAddr)) == -1) {
+        if (errno != EINPROGRESS) {
+            close(clntSd);
+            err_proc();
+        }
 
-	//unsigned char rBuff[] = "201931212021304420211806\n1000000\n2147483647\n5\n";
-	
-	//read 받자마자 fork -> child process에서 hash 계산
-	int c_pid=fork();
-	if(c_pid==0){
-		unsigned char challenge[24];
-		int startcount;
-		int maxcount;
-		int difficulty;
+        fd_set writeSet;
+        FD_ZERO(&writeSet);
+        FD_SET(clntSd, &writeSet);
 
-		//받은 값을 \n단위로 분리해서 할당
-		char *token = strtok(rBuff, "\n");
+        int result = select(clntSd + 1, NULL, &writeSet, NULL, NULL);
+        if (result < 0) {
+            perror("select");
+            exit(1);
+        } else if (result == 0) {
+            fprintf(stderr, "Connection timeout\n");
+            exit(1);
+        }
+    }
 
-		strcpy(challenge, token);
+    printf("Connected..\n");
 
-		token = strtok(NULL, "\n");
-		startcount = atoi(token);
+    while (1) {
+        int nbytes = read(clntSd, rBuff, BUFSIZ - 1);
 
-		token = strtok(NULL, "\n");
-		maxcount = atoi(token);
+       	if(nbytes>0){
+			//printf("%s\n", rBuff);
+            printf("Data Accepted..\n");
+			break;
+        }
+    }
 
-		token = strtok(NULL, "\n");
-		difficulty = atoi(token);
+    /*임의 data
+    unsigned char challenge[] = "201931212021304420211806";
+    int startcount = 1000000;
+    int maxcount = 2147483647;
+    int difficulty = 8;*/
 
-		for(;startcount<=maxcount;startcount++){
-			//nonce to char*
-			unsigned char nonce[10];
-			sprintf(nonce, "%d",startcount);
-			//concal challenge||nonce -> m
-			unsigned char m[sizeof(challenge)+sizeof(nonce)];
-			memcpy(m, challenge, sizeof(challenge));
-			memcpy(m+sizeof(challenge), nonce, sizeof(nonce));
+    //unsigned char rBuff[] = "201931212021304420211806\n1000000\n2147483647\n5\n";
 
-			unsigned char hash[SHA256_DIGEST_LENGTH];
-			SHA256(m, sizeof(m)-1, hash);
+    //read 받자마자 fork -> child process에서 hash 계산
+    int c_pid = fork();
+    if (c_pid == 0) {
+        unsigned char challenge[24];
+        unsigned int startcount;
+        unsigned int maxcount;
+        int difficulty;
 
-			//pow검증 변수
-			int pow = 1;
-			//byte단위로 hash 부분 포인팅할 변수
-			int hcnt = 0;
+        //받은 값을 \n단위로 분리해서 할당
+        char *token = strtok(rBuff, "\n");
 
-			//hash값 상위 difficulty bit 0여부 확인
-			for(int i=0;i<difficulty;hcnt++){
-				//hash[i]에 두개의 bit가 나옴 
-				//-> difficulty가 홀수일때는 마지막 비트까지 확인하기 위해 파싱 필요
-				char byte = hash[hcnt];
+        strcpy(challenge, token);
 
-				if(i+1==difficulty){
-					//홀수일때 확인하기 위해 bit shift
-					int firstbit = (byte >> 4) & 0x0F;
-					if(firstbit!=0){
-						pow=0;
-						break;
-					}
-				}
-				
-				else if(byte!=0x00){
-					pow=0;
-					break;
-				}
-				i+=2;
-			}
+        token = strtok(NULL, "\n");
+        startcount = atoi(token);
 
-			//difficulty 조건을 만족하는 해시값 존재시
-			if(pow){
-				//해시값 찾으면 서버에게 전송
-				write(clntSd,nonce,sizeof(nonce));
-				/*nonce, hash 출력코드*/
-				printf("nonce: %s ", nonce);
+        token = strtok(NULL, "\n");
+        maxcount = atoi(token);
 
-				for(int i=0;i<SHA256_DIGEST_LENGTH;i++){
-					printf("%02x", hash[i]);
-				}
-				printf("\n");
-				exit(startcount);
-			}	
-		}		
-	}
-	//부모 프로세스에서는 자식에서 해시값 찾기 전에 부모에서 연락오면 자식종료
-	else{
-		int status;
+        token = strtok(NULL, "\n");
+        difficulty = atoi(token);
 
-		waitpid(c_pid, &status, 0);
-		printf("%d", WEXITSTATUS(status));
+        for (; startcount <= maxcount; startcount++) {
+            //nonce to char*
+            unsigned char nonce[10];
+            sprintf(nonce, "%d", startcount);
+            //concal challenge||nonce -> m
+            unsigned char m[sizeof(challenge) + sizeof(nonce)];
+            memcpy(m, challenge, sizeof(challenge));
+            memcpy(m + sizeof(challenge), nonce, sizeof(nonce));
 
+            unsigned char hash[SHA256_DIGEST_LENGTH];
+            SHA256(m, sizeof(m) - 1, hash);
+
+            //pow검증 변수
+            int pow = 1;
+            //byte단위로 hash 부분 포인팅할 변수
+            int hcnt = 0;
+
+            //hash값 상위 difficulty bit 0여부 확인
+            for (int i = 0; i < difficulty; hcnt++) {
+                //hash[i]에 두개의 bit가 나옴
+                //-> difficulty가 홀수일때는 마지막 비트까지 확인하기 위해 파싱 필요
+                char byte = hash[hcnt];
+
+                if (i + 1 == difficulty) {
+                    //홀수일때 확인하기 위해 bit shift
+                    int firstbit = (byte >> 4) & 0x0F;
+                    if (firstbit != 0) {
+                        pow = 0;
+                        break;
+                    }
+                } else if (byte != 0x00) {
+                    pow = 0;
+                    break;
+                }
+                i += 2;
+            }
+
+            //difficulty 조건을 만족하는 해시값 존재시
+            if (pow) {
+                //해시값 찾으면 서버에게 전송
+                write(clntSd, nonce, sizeof(nonce));
+                /*nonce, hash 출력코드*/
+                printf("nonce: %s ", nonce);
+
+                for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+                    printf("%02x", hash[i]);
+                }
+                printf("\n");
+                exit(startcount);
+            }
+        }
+    } else {
+		//논블로킹으로 server의 read 기다림
 		char rBuff[BUFSIZ];
-		read(clntSd, rBuff, BUFSIZ);
 
-		printf("Another Server find...\n");
-		kill(c_pid, SIGINT);
-	}
-	
-	printf("Working Server Close...\n");
-	close(clntSd);
+		while (1) {
+			int nbytes = read(clntSd, rBuff, BUFSIZ - 1);
 
-	return 0;
+			if(nbytes>0){
+				printf("%s\n", rBuff);
+        		kill(c_pid, SIGINT);
+				break;
+			}
+		}        
+    }
+
+    printf("Working Server Close...\n");
+    close(clntSd);
+
+    return 0;
 }
 
 void err_proc()
 {
-	fprintf(stderr,"Error: %s\n", strerror(errno));
-	exit(errno);
+    fprintf(stderr, "Error: %s\n", strerror(errno));
+    exit(errno);
 } 
