@@ -7,8 +7,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <time.h>
+#include <openssl/sha.h>
+#include <limits.h>
 
-#define MAX_CLIENTS 3
+#define MAX_CLIENTS 2
 #define BUFFER_SIZE 1024
 
 int main() {
@@ -20,13 +22,42 @@ int main() {
     int max_fd, activity, i, valread;
     int client_count = 0;
     int first_response_idx = -1;
-	clock_t start,end;	
-	//sending buffer
-	unsigned char buff[3][BUFFER_SIZE] = {
-		"201931212021304420211806\n0\n1431655765\n5\n",
-		"201931212021304420211806\n1431655766\n2863311530\n5\n",
-		"201931212021304420211806\n2863311531\n4294967295\n5\n"
-	};
+    time_t start_time, end_time;
+
+	//challenge값
+	char challenge[1024];
+    printf("challenge: ");
+    scanf("%s",challenge);
+
+    //difficulty
+    int difficulty;
+    printf("difficulty: ");
+    scanf("%d",&difficulty);
+
+    //challenge + startcount + endcount + difficulty
+
+    //전처리
+    int startcnt=0;
+    
+    int endcnt = INT_MAX/MAX_CLIENTS; //intmax/2
+
+    char m[2048];
+    char buff[MAX_CLIENTS][2048];
+
+    for(int i=0;i<MAX_CLIENTS;i++){
+
+        //초기화
+        memset(m, 0, sizeof(m));
+
+        sprintf(m, "%s\n%d\n%d\n%d", challenge, startcnt, endcnt, difficulty);
+
+        startcnt = endcnt+1;
+        endcnt = endcnt+INT_MAX/MAX_CLIENTS;
+        if(endcnt>INT_MAX)
+            endcnt = INT_MAX;
+
+        strcpy(buff[i],m);
+    }
 
     // 서버 소켓 생성
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -98,7 +129,7 @@ int main() {
             //모두 연결되면 일괄 전송
             if (client_count >= MAX_CLIENTS) {
                 printf("all connected... sending challenge\n");
-				start = clock();
+				start_time = time(NULL);
 				for (int j = 0; j < MAX_CLIENTS; j++) {
 					send(client_sockets[j], buff[j], sizeof(buff[j]),0);
 				}
@@ -110,15 +141,19 @@ int main() {
         for (i = 0; i < MAX_CLIENTS; i++) {
             int client_socket = client_sockets[i];
             if (FD_ISSET(client_socket, &readfds)) {
-                memset(buffer, 0, BUFFER_SIZE);
-                valread = recv(client_socket, buffer, BUFFER_SIZE, 0);
-				end = clock();
+                char nonce[11];
+
+                valread = recv(client_socket, nonce, sizeof(nonce), 0);
+                //printf("recv nonce: %s\n", nonce);
+				end_time = time(NULL);
 
                 if (valread <= 0) {
                     // 클라이언트 연결 종료 처리
                     printf("클라이언트 연결이 종료되었습니다\n");
                     close(client_socket);
                     client_sockets[i] = -1;
+                    client_count--;
+                    
                 } else {
                     // 클라이언트로부터 메시지 수신
 
@@ -130,19 +165,70 @@ int main() {
                         continue;
                     }
 
-                    // 모든 클라이언트에게 메시지 전송
-                    for (int j = 0; j < MAX_CLIENTS; j++) {
-                        int client = client_sockets[j];
-                        if (client > 0) {
-                            send(client, "nonce를 구했습니다.\n", strlen("nonce를 구했습니다.\n"), 0);
+                    
+					//결과값 계산
+					char m[2048]={0,};
+                    strcat(m,challenge);
+                    strcat(m,nonce);
+
+					unsigned char hash[SHA256_DIGEST_LENGTH];
+					SHA256(m, sizeof(m)-1, hash);
+
+                    double totaltime = difftime(end_time, start_time);
+
+					printf("nonce : %s, 소요시간 : %.2f초\n", nonce, totaltime);
+					//hash 출력
+					for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+                        printf("%02x", hash[i]);
+					}
+					printf("\n");
+
+                    int hcnt=0;
+                    int pow=1;
+                    
+                    //client가 계산한 nonce 확인
+                    for (int k = 0; k < difficulty; hcnt++) {
+                        //hash[i]에 두개의 bit가 나옴
+                        //-> difficulty가 홀수일때는 마지막 비트까지 확인하기 위해 파싱 필요
+                        char byte = hash[hcnt];
+
+                        if (k + 1 == difficulty) {
+                            //홀수일때 확인하기 위해 bit shift
+                            int firstbit = (byte >> 4) & 0x0F;
+                            if (firstbit != 0) {
+                                pow = 0;
+                                break;
+                            }
+                        } else if (byte != 0x00) {
+                            pow = 0;
+                            break;
                         }
+                        k += 2;
                     }
-					
-					printf("nonce : %s , 소요시간 : %lf\n", buffer, (double)(end-start) / CLOCKS_PER_SEC);
+
+                    if(pow){
+                        printf("적절한 nonce입니다.\n");
+                        // 모든 클라이언트에게 메시지 전송
+                        for (int j = 0; j < MAX_CLIENTS; j++) {
+                            int client = client_sockets[j];
+                            if(i==j){
+                                send(client, "적절한 nonce입니다.", strlen("적절한 nonce입니다."),0);
+                            }
+                            if (client > 0) {
+                                send(client, "다른 working server가 nonce를 구했습니다.", strlen("다른 working server가 nonce를 구했습니다."), 0);
+                            }
+                        }
+                    
+                    }
+                    else{
+                        printf("잘못된 nonce입니다.\n");
+                        continue;
+                    }
 
                 }
             }
         }
+        if(client_count==0) break;
     }
 
     // 연결 종료
@@ -156,4 +242,3 @@ int main() {
 
     return 0;
 }
-

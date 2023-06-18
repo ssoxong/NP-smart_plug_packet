@@ -11,7 +11,6 @@
 #include <unistd.h>
 #include <sys/select.h>
 
-
 void err_proc();
 
 int main(int argc, char** argv)
@@ -19,9 +18,10 @@ int main(int argc, char** argv)
     int clntSd;
     struct sockaddr_in clntAddr;
     int clntAddrLen, readLen, recvByte, maxBuff;
-    char rBuff[BUFSIZ];
+    char rBuff[2048];
     if(argc != 3) {
         printf("Usage: %s [IP Address] [Port]\n", argv[0]);
+        exit(1);
     }
 
     //연결할 소켓 할당
@@ -63,10 +63,12 @@ int main(int argc, char** argv)
     while (1) {
         int nbytes = read(clntSd, rBuff, BUFSIZ - 1);
 
-       	if(nbytes>0){
-			//printf("%s\n", rBuff);
+        if(nbytes > 0) {
             printf("Data Accepted..\n");
-			break;
+            break;
+        } else if (nbytes == 0) {
+            fprintf(stderr, "Connection closed by the server\n");
+            exit(1);
         }
     }
 
@@ -92,25 +94,31 @@ int main(int argc, char** argv)
         strcpy(challenge, token);
 
         token = strtok(NULL, "\n");
-        startcount = atoi(token);
+        startcount = atol(token);
 
         token = strtok(NULL, "\n");
-        maxcount = atoi(token);
+        maxcount = atol(token);
 
         token = strtok(NULL, "\n");
         difficulty = atoi(token);
 
         for (; startcount <= maxcount; startcount++) {
             //nonce to char*
-            unsigned char nonce[10];
+            char nonce[11];
             sprintf(nonce, "%d", startcount);
+
             //concal challenge||nonce -> m
-            unsigned char m[sizeof(challenge) + sizeof(nonce)];
-            memcpy(m, challenge, sizeof(challenge));
-            memcpy(m + sizeof(challenge), nonce, sizeof(nonce));
+            char m[2048]={0,};
+            strcat(m,challenge);
+            strcat(m,nonce);
 
             unsigned char hash[SHA256_DIGEST_LENGTH];
             SHA256(m, sizeof(m) - 1, hash);
+
+            // for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+            //         printf("%02x", hash[i]);
+            //     }
+            //     printf("\n");
 
             //pow검증 변수
             int pow = 1;
@@ -140,9 +148,10 @@ int main(int argc, char** argv)
             //difficulty 조건을 만족하는 해시값 존재시
             if (pow) {
                 //해시값 찾으면 서버에게 전송
+                printf("m: %s\n",m);
                 write(clntSd, nonce, sizeof(nonce));
                 /*nonce, hash 출력코드*/
-                printf("nonce: %s ", nonce);
+                printf("nonce: %s\n", nonce);
 
                 for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
                     printf("%02x", hash[i]);
@@ -152,18 +161,21 @@ int main(int argc, char** argv)
             }
         }
     } else {
-		//논블로킹으로 server의 read 기다림
-		char rBuff[BUFSIZ];
+        //논블로킹으로 server의 read 기다림
+        char rBuff[BUFSIZ];
 
-		while (1) {
-			int nbytes = read(clntSd, rBuff, BUFSIZ - 1);
+        while (1) {
+            int nbytes = read(clntSd, rBuff, BUFSIZ - 1);
 
-			if(nbytes>0){
-				printf("%s\n", rBuff);
-        		kill(c_pid, SIGINT);
-				break;
-			}
-		}        
+            if(nbytes > 0) {
+                printf("%s", rBuff);
+                kill(c_pid, SIGINT);
+                break;
+            } else if (nbytes == 0) {
+                fprintf(stderr, "Connection closed by the server\n");
+                exit(1);
+            }
+        }
     }
 
     printf("Working Server Close...\n");
@@ -176,4 +188,4 @@ void err_proc()
 {
     fprintf(stderr, "Error: %s\n", strerror(errno));
     exit(errno);
-} 
+}
