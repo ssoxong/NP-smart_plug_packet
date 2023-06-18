@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <time.h>
+#include <openssl/sha.h>
 
 #define MAX_CLIENTS 3
 #define BUFFER_SIZE 1024
@@ -20,7 +21,10 @@ int main() {
     int max_fd, activity, i, valread;
     int client_count = 0;
     int first_response_idx = -1;
-	clock_t start,end;	
+	clock_t start,end;
+
+	//challenge값
+	unsigned char challenge[24] = {"201931212021304420211806"};
 	//sending buffer
 	unsigned char buff[3][BUFFER_SIZE] = {
 		"201931212021304420211806\n0\n1431655765\n5\n",
@@ -137,8 +141,21 @@ int main() {
                             send(client, "nonce를 구했습니다.\n", strlen("nonce를 구했습니다.\n"), 0);
                         }
                     }
-					
+				
+					//결과값 계산
+					unsigned char m[sizeof(challenge)+sizeof(buffer)];
+					memcpy(m, challenge, sizeof(challenge));
+					memcpy(m + sizeof(challenge), buffer, sizeof(buffer));
+
+					unsigned char hash[SHA256_DIGEST_LENGTH];
+					SHA256(m, sizeof(m) - 1, hash);
+
 					printf("nonce : %s , 소요시간 : %lf\n", buffer, (double)(end-start) / CLOCKS_PER_SEC);
+					//hash 출력
+					for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+                    printf("%02x", hash[i]);
+					}
+					printf("\n");
 
                 }
             }
