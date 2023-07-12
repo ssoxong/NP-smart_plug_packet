@@ -1,7 +1,7 @@
 # 2023-1 네트워크프로그래밍 프로젝트
-======
-##NP-Project
-------
+---
+## NP-Project
+---
 ### Smart plug packetpyt
 - [x] scapy 로 패킷 끌어오기
 - [x] scapy 에서 발생하는 패킷 분석하기
@@ -16,5 +16,5 @@
 __python ver 3.9.13 conda__
 __iface 확인 - scapy에서 ifaces 영문__
 
-##Pow 분산실행,단독실행
+## Pow 분산실행,단독실행
 ---
